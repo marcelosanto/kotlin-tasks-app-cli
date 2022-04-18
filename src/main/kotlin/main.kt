@@ -2,6 +2,7 @@ import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import kotlinx.datetime.*
 import java.io.File
 
 fun main() {
@@ -41,8 +42,8 @@ fun main() {
                 addNewTask(tasksList, priority, date, time)
             }
             "print" -> printTasks(tasksList)
-            //"edit" -> editTask(tasksList)
-            //"delete" -> deleteTask(tasksList)
+            "edit" -> editTask(tasksList)
+            "delete" -> deleteTask(tasksList)
             "end" -> {
                 println("Tasklist exiting!")
                 saveToJson(taskAdapter, taskJson, tasksList)
@@ -58,21 +59,176 @@ fun saveToJson(taskAdapter: JsonAdapter<List<Task>>, taskJson: File, tasksList: 
     taskJson.writeText(taskAdapter.toJson(tasksList))
 }
 
+fun editTask(taskList: MutableList<Task>) {
+    printTasks(taskList)
+
+    if (taskList.isNotEmpty()) {
+        while (true) {
+            try {
+                println("Input the task number (1-${taskList.size}):")
+                val taskEdit = readln().toInt()
+
+                if (taskEdit in 1..taskList.size) {
+                    while (true) {
+                        println("Input a field to edit (priority, date, time, task):")
+                        when (readln()) {
+                            "priority" -> {
+                                val task = editTaskOption(taskList[taskEdit - 1], priority = true)
+                                taskList[taskEdit - 1] = task
+                                break
+                            }
+                            "date" -> {
+                                val task = editTaskOption(taskList[taskEdit - 1], date = true)
+                                taskList[taskEdit - 1] = task
+                                break
+                            }
+                            "time" -> {
+                                val task = editTaskOption(taskList[taskEdit - 1], time = true)
+                                taskList[taskEdit - 1] = task
+                                break
+                            }
+                            "task" -> {
+                                val task = editTaskOption(taskList[taskEdit - 1], taskEdit = true)
+                                taskList[taskEdit - 1] = task
+                                break
+                            }
+                            else -> println("Invalid field")
+                        }
+                    }
+                    println("The task is changed")
+                    break
+                } else println("Invalid task number")
+
+            } catch (_: Exception) {
+                println("Invalid task number")
+                continue
+            }
+        }
+    }
+
+}
+
+fun editTaskOption(
+    task: Task,
+    priority: Boolean = false,
+    date: Boolean = false,
+    time: Boolean = false,
+    taskEdit: Boolean = false
+): Task {
+    var copyDate = task.date
+    var copyHour = task.time
+    var copyPriority = task.priority
+    val tag = task.tag
+    val copyTask = task.task
+
+    if (priority) copyPriority = addTaskPriority()
+    if (date) copyDate = addTaskDate()
+    if (time) copyHour = addTaskTime()
+
+    if (taskEdit) {
+        task.task.removeAll(task.task)
+        val newTask = addTask()
+
+        return Task(copyPriority, copyDate, tag, copyHour, newTask)
+    }
+
+    return Task(copyPriority, copyDate, tag, copyHour, copyTask)
+}
+
+fun deleteTask(taskList: MutableList<Task>) {
+
+    printTasks(taskList)
+
+    if (taskList.isNotEmpty()) {
+        while (true) {
+            try {
+                println("Input the task number (1-${taskList.size}):")
+                val taskDelete = readln().toInt()
+                if (taskDelete in 1..taskList.size) {
+                    taskList.removeAt(taskDelete - 1)
+                    println("The task is deleted")
+                    break
+                } else println("Invalid task number")
+
+            } catch (_: Exception) {
+                println("Invalid task number")
+                continue
+            }
+        }
+    }
+}
+
 fun addTaskPriority(): String {
-    return "C"
+    while (true) {
+        println("Input the task priority (C, H, N, L):")
+        return when (readln().uppercase()) {
+            "C" -> "C"
+            "H" -> "H"
+            "N" -> "N"
+            "L" -> "L"
+            else -> continue
+        }
+
+    }
+
+
 }
 
 fun addTaskDate(): String {
-    return "2022-04-18"
+    var date: LocalDate
+
+    while (true) {
+        return try {
+            println("Input the date (yyyy-mm-dd): ")
+            val data = readln().split("-").toMutableList()
+
+            data[1] = if (data[1].toInt() < 9 && data[1].length == 1) "0${data[1]}" else data[1]
+            data[2] = if (data[2].toInt() < 9 && data[2].length == 1) "0${data[2]}" else data[2]
+
+            date = LocalDate.parse("${data[0]}-${data[1]}-${data[2]}")
+            date.toString()
+        } catch (_: Exception) {
+            println("The input date is invalid")
+            continue
+        }
+    }
+
+
 }
 
 fun addTaskTime(): String {
-    return "18:00"
+    while (true) {
+        try {
+            println("Input the time (hh:mm):")
+            val hour = readln().split(":").toMutableList()
+
+            if (hour[0].toInt() in 0..23 && hour[1].toInt() in 0..59) {
+                hour[0] = if (hour[0].toInt() < 10 && hour[0].length == 1) "0${hour[0]}" else hour[0]
+                hour[1] = if (hour[1].toInt() < 10 && hour[1].length == 1) "0${hour[1]}" else hour[1]
+                return "${hour[0]}:${hour[1]}"
+            } else {
+                println("The input time is invalid")
+            }
+        } catch (_: Exception) {
+            println("The input time is invalid")
+            continue
+        }
+
+    }
+
 }
 
-
 fun addNewTask(taskList: MutableList<Task>, priority: String, date: String, time: String) {
-    val tag = "T"
+    val currentDate = Clock.System.now().toLocalDateTime(TimeZone.of("UTC+0")).date
+    val numberOfDays = currentDate.daysUntil(date.toLocalDate())
+    val tag = if (numberOfDays == 0) "T" else if (numberOfDays > 0) "I" else "O"
+
+    val task = addTask()
+
+    if (task.isNotEmpty()) taskList.add(Task(priority, date, tag, time, task))
+}
+
+private fun addTask(): MutableList<String> {
     val task = mutableListOf<String>()
 
     println("Input a new task (enter a blank line to end): ")
@@ -88,8 +244,7 @@ fun addNewTask(taskList: MutableList<Task>, priority: String, date: String, time
         }
     }
 
-    taskList.add(Task(priority, date, tag, time, task))
-
+    return task
 }
 
 fun printTasks(tasksList: MutableList<Task>) {
@@ -205,3 +360,4 @@ fun getColorPriority(p: String): String = when (p.uppercase()) {
     "L" -> "\u001B[104m \u001B[0m"
     else -> "\u001B[102m \u001B[0m"
 }
+
