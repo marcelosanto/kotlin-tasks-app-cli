@@ -93,7 +93,115 @@ fun addNewTask(taskList: MutableList<Task>, priority: String, date: String, time
 }
 
 fun printTasks(tasksList: MutableList<Task>) {
-    for ((i, value) in tasksList.withIndex()) {
-        println("$i - ${value.task}")
+    if (tasksList.isEmpty()) {
+        println("No tasks have been input")
+    } else {
+        printFirstLine()
+        printEndLine()
+        for (i in tasksList.indices) {
+            printLine("${i + 1}", tasksList[i])
+            printEndLine()
+        }
+
     }
+}
+
+private fun printFirstLine() {
+    printEndLine()
+    print("|")
+    print(" N  ")
+    print("|")
+    print("    Date    ")
+    print("|")
+    print(" Time  ")
+    print("|")
+    print(" P ")
+    print("|")
+    print(" D ")
+    print("|")
+    print("                   Task                     ")
+    println("|")
+}
+
+private fun printEndLine() {
+    println("+----+------------+-------+---+---+--------------------------------------------+")
+}
+
+private fun printLine(
+    index: String = " ",
+    lineDataTimePD: Task
+) {
+    val (p, data, d, hour, task) = lineDataTimePD
+
+    val priorityColor = getColorPriority(p)
+    val duoTagColor = getColorDuoTag(d)
+
+    print("|")
+    if (index.toInt() < 10) print(" $index  ") else print(" $index ")
+    print("|")
+    if (data.isNotEmpty()) print(" $data ") else print(" ".repeat(14))
+    print("|")
+    if (hour.isNotEmpty()) print(" $hour ") else print(" ".repeat(7))
+    print("|")
+    if (priorityColor.isNotEmpty()) print(" $priorityColor ") else print(" ".repeat(3))
+    print("|")
+    if (duoTagColor.isNotEmpty()) print(" $duoTagColor ") else print(" ".repeat(3))
+    print("|")
+    for (i in 0 until task.size) {
+        if (task[i].length < 44 && i == 0) {
+            val spacing = 44 - task[i].length
+            print(task[i])
+            print(" ".repeat(spacing))
+            println("|")
+        } else if (task[i].length > 44 && i == 0) {
+            val taskEndLine = task[i].length - 44
+            print(task[i].take(44))
+            println("|")
+            printSecondLine(task[i].takeLast(taskEndLine))
+        } else if (task[i].length > 44 && i > 1) {
+            val taskEndLine = task[i].length - 44
+            printSecondLine(task[i].take(44))
+            printSecondLine(task[i].takeLast(taskEndLine))
+        } else {
+            printSecondLine(task[i])
+        }
+    }
+
+}
+
+private fun printSecondLine(
+    task: String = ""
+) {
+
+    print("|")
+    print("    ")
+    print("|")
+    print(" ".repeat(12))
+    print("|")
+    print(" ".repeat(7))
+    print("|")
+    print(" ".repeat(3))
+    print("|")
+    print(" ".repeat(3))
+    print("|")
+    val spacing = 44 - task.length
+    print(task)
+    print(" ".repeat(spacing))
+    println("|")
+
+}
+
+fun getColorDuoTag(tag: String): String = when (tag) {
+    "I" -> "\u001B[102m \u001B[0m"
+    "T" -> "\u001B[103m \u001B[0m"
+    "O" -> "\u001B[101m \u001B[0m"
+    else -> "\u001B[102m \u001B[0m"
+}
+
+fun getColorPriority(p: String): String = when (p.uppercase()) {
+    "C" -> "\u001B[101m \u001B[0m"
+    "H" -> "\u001B[103m \u001B[0m"
+    "N " -> "\u001B[102m \u001B[0m"
+    "L" -> "\u001B[104m \u001B[0m"
+    else -> "\u001B[102m \u001B[0m"
 }
